@@ -3,4 +3,4 @@ go:
  - master
 
 script:
- - go test -v ./vanityssh.go
+ - go run -v ./vanityssh.go
