@@ -1,6 +1,13 @@
-language: go
-go: 
- - master
+dist: xenial
 
+language: go
+
+go:
+  - 1.12.x
+
+# Only clone the most recent commit.
+git:
+  depth: 1
+  
 script:
- - go run -v ./vanityssh.go
+ - go run -v ./...
