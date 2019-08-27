@@ -28,7 +28,7 @@ jobs:
       run: go build -v .
 
     - name: Check Help
-      run: go run -v ./... --help
+      run: go run -v ./... --help || true
 
     - name: Test Regex - Ends with 'GO'
       run: go run -v ./... --regex 'GO$'
