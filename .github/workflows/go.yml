@@ -1,5 +1,5 @@
 name: Go
-on: [push]
+on: [push, pull_request]
 jobs:
 
   build:
@@ -27,5 +27,11 @@ jobs:
     - name: Build
       run: go build -v .
 
-    - name: Run
-      run: go run -v ./...
+    - name: Check Help
+      run: go run -v ./... --help
+
+    - name: Test Regex - Ends with 'GO'
+      run: go run -v ./... --regex 'GO$'
+
+    - name: Test Regex - Ends with 'SSH', insensitive
+      run: go run -v ./... --insensitive --regex "SSH$"
