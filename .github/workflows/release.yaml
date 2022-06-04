@@ -63,6 +63,18 @@ jobs:
         GOARCH: amd64
         GOOS: darwin
         EXTRA_FILES: "LICENSE README.md"
+  release-darwin-arm64:
+    name: release darwin/arm64
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: compile and release
+      uses: danielewood/go-release.action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GOARCH: arm64
+        GOOS: darwin
+        EXTRA_FILES: "LICENSE README.md"
   release-windows-386:
     name: release windows/386
     runs-on: ubuntu-latest
