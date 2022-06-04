@@ -1,6 +1,8 @@
 # .github/workflows/release.yaml
 
-on: release
+on:
+  release:
+    types: [published]
 name: Build Release
 jobs:
   release-linux-386:
