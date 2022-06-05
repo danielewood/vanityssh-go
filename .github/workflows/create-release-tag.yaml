@@ -4,7 +4,7 @@ on:
       - master
 jobs:
   release-on-push:
-  name: Create Release on Push
+    name: Create Release on Push
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.VANITYSSHGO_PAT }}
