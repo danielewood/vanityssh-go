@@ -2,7 +2,7 @@
 on:
   release:
     types: [published]
-name: Build Release
+name: Build Release Artifacts
 jobs:
   release-linux-386:
     name: release linux/386

@@ -1,11 +1,8 @@
 name: Check Build
 on: 
-  push:
-    paths:
-      - "*.go"
   pull_request:
     paths:
-      - "*.go"
+      - '*.go'
   workflow_dispatch:
   
 jobs:
