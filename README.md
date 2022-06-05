@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.com/danielewood/vanityssh-go.svg?branch=master)](https://travis-ci.com/danielewood/vanityssh-go)
-
 # vanityssh-go
 vanityssh allows you to generate millions of ED25519 private keys in the OpenSSH private key format and run a regex search against the resulting public keys. You can use this to find patterns in ssh public keys that you like.
 
