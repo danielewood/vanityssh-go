@@ -2,12 +2,12 @@ on:
   push:
     branches:
       - master
-
 jobs:
   release-on-push:
+  name: Create Release on Push
     runs-on: ubuntu-latest
     env:
-      GITHUB_TOKEN: ${{ secrets.GitHub_PAT }}
+      GITHUB_TOKEN: ${{ secrets.VANITYSSHGO_PAT }}
     steps:
       - uses: rymndhng/release-on-push-action@master
         with:
