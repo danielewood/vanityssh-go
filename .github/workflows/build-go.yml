@@ -1,4 +1,4 @@
-name: Go
+name: Check Build
 on: 
   push:
     paths:
@@ -10,7 +10,7 @@ on:
   
 jobs:
   build:
-    name: Build
+    name: Build Go
     runs-on: ubuntu-latest
     steps:
 
@@ -40,4 +40,3 @@ jobs:
 
     - name: Test Regex - Ends with 'SSH', insensitive
       run: go run -v ./... --insensitive --regex "SSH$"
-      
