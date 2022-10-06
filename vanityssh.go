@@ -2,40 +2,43 @@ package main
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/pem"
 	"flag"
 	"fmt"
-	"github.com/mikesmitty/edkey"
-	"golang.org/x/crypto/ed25519"
-	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 	"os"
 	"os/signal"
 	"regexp"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
-"bytes"
+
+	"github.com/mikesmitty/edkey"
+	"golang.org/x/crypto/ed25519"
+	"golang.org/x/crypto/ssh"
 )
 
 var global_user_input string
 var global_user_insensitive bool
 var global_user_streaming bool
+var global_user_fingerprint bool
+
 //var flagvar int
 var global_counter int64
 var start time.Time
 var re *regexp.Regexp
 var err error
 
-
 func init() {
-//	flag.IntVar(&flagvar, "flagname", 1234, "put an integer here")
 	flag.StringVar(&global_user_input, "regex", "", "regex pattern goes here")
 	flag.BoolVar(&global_user_insensitive, "insensitive", false, "case-insensitive")
 	flag.BoolVar(&global_user_streaming, "streaming", false, "Keep processing keys, even after a match")
+	flag.BoolVar(&global_user_fingerprint, "fingerprint", false, "Match against fingerprint instead of public key")
 	flag.Parse()
 	start = time.Now()
-
 
 	if global_user_insensitive == false {
 		re, err = regexp.Compile(global_user_input)
@@ -71,20 +74,39 @@ func findsshkeys() {
 			Bytes: edkey.MarshalED25519PrivateKey(privKey),
 		}
 		privateKey := pem.EncodeToMemory(pemKey)
-		authorizedKey := ssh.MarshalAuthorizedKey(publicKey)
-		authorizedKey = bytes.Trim(authorizedKey, "\n") // Trim newline
-		if re.Match(authorizedKey) {
+
+		matched := false
+		if global_user_fingerprint {
+			matched = re.MatchString(getFingerprint(publicKey))
+		} else {
+			matched = re.MatchString(getAuthorizedKey(publicKey))
+		}
+
+		if matched {
 			fmt.Printf("\033[2K\r%s%d", "SSH Keys Processed = ", global_counter)
 			fmt.Println("\nTotal execution time", time.Since(start))
 			fmt.Printf("%s\n", privateKey)
-			fmt.Printf("%s\n", authorizedKey)
+			fmt.Printf("%s\n", getAuthorizedKey(publicKey))
+			fmt.Printf("SHA256:%s\n", getFingerprint(publicKey))
 			if global_user_streaming == false {
 				_ = ioutil.WriteFile("id_ed25519", privateKey, 0600)
-				_ = ioutil.WriteFile("id_ed25519.pub", authorizedKey, 0644)
+				_ = ioutil.WriteFile("id_ed25519.pub", []byte(getAuthorizedKey(publicKey)), 0644)
 				os.Exit(0)
 			}
 		}
 	}
+}
+
+// Generate a SHA256 fingerprint of a public key
+func getFingerprint(key ssh.PublicKey) string {
+	h := sha256.New()
+	h.Write(key.Marshal())
+	return base64.StdEncoding.EncodeToString(h.Sum(nil))
+}
+
+// Generate an `authorized_keys` line for a public key
+func getAuthorizedKey(key ssh.PublicKey) string {
+	return strings.TrimSpace(string(ssh.MarshalAuthorizedKey(key)))
 }
 
 func main() {
