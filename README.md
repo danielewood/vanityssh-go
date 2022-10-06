@@ -78,3 +78,23 @@ t+aaaaafoOBaRRqTgPrs9pWUBKiOHw/EYq9lf1DSovogAAAAAAECAwQF
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOaaaafoOBaRRqTgPrs9pWUBKiOHw/EYq9lf1DSovog
 
 ```
+
+Find a public key whose SHA256 fingerprint starts with `0000`:
+```bash
+$ ./vanityssh --fingerprint --regex '^0000'
+global_user_input = ^0000
+Press Ctrl+C to end
+SSH Keys Processed = 7420830
+Total execution time 46.479848625s
+-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtz
+c2gtZWQyNTUxOQAAACCDaz0XpXwr1lXkMe9d/XiYhEqoEo7xND+WfIi6Rcpc9QAA
+AIiSMeGukjHhrgAAAAtzc2gtZWQyNTUxOQAAACCDaz0XpXwr1lXkMe9d/XiYhEqo
+Eo7xND+WfIi6Rcpc9QAAAEA2q7FROiORV1NCMmOFKpPuJC4PpkiqL8zOJKRjowbZ
+34NrPRelfCvWVeQx7139eJiESqgSjvE0P5Z8iLpFylz1AAAAAAECAwQF
+-----END OPENSSH PRIVATE KEY-----
+
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIINrPRelfCvWVeQx7139eJiESqgSjvE0P5Z8iLpFylz1
+SHA256:0000+RLM8XK4vFSKhEUKyvztCIFtR+Q7j04eKB3fA2c=
+
+```
