@@ -30,6 +30,7 @@ var global_user_fingerprint bool
 var global_user_json bool
 var global_user_json_verbose bool
 var global_user_high_priority bool
+var global_user_update_rate int
 
 // var flagvar int
 var global_counter int64
@@ -67,6 +68,7 @@ func init() {
 	flag.BoolVar(&global_user_insensitive, "insensitive", false, "case-insensitive")
 	flag.BoolVar(&global_user_streaming, "streaming", false, "Keep processing keys, even after a match")
 	flag.BoolVar(&global_user_fingerprint, "fingerprint", false, "Match against fingerprint instead of public key")
+	flag.IntVar(&global_user_update_rate, "update-rate", 1, "frequency for updates in seconds")
 	flag.Parse()
 	initTime = time.Now()
 
@@ -190,7 +192,7 @@ func main() {
 				fmt.Fprintf(os.Stderr, "%s\n", err)
 				return
 			}
-			time.Sleep(1000 * time.Millisecond)
+			time.Sleep(time.Duration(global_user_update_rate) * time.Second)
 
 			after, err := cpu.Get()
 			if err != nil {
@@ -219,7 +221,7 @@ func main() {
 			// jsonPrintBytes(json_bytes)
 
 		} else {
-			time.Sleep(1000 * time.Millisecond)
+			time.Sleep(time.Duration(global_user_update_rate) * time.Second)
 			fmt.Fprintf(os.Stdout, "\033[2K\r%s%d", "SSH Keys Processed = ", global_counter)
 		}
 
