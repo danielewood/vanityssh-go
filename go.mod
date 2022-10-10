@@ -11,7 +11,7 @@ require (
 require (
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f // indirect
-	github.com/mackerelio/go-osstat v0.2.3 // indirect
+	github.com/mackerelio/go-osstat v0.2.3
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/shopspring/decimal v1.3.1

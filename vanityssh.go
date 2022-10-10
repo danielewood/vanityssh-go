@@ -31,6 +31,7 @@ var global_user_json bool
 var global_user_json_verbose bool
 var global_user_high_priority bool
 var global_user_update_rate int
+var global_user_threads int
 
 // var flagvar int
 var global_counter int64
@@ -69,6 +70,7 @@ func init() {
 	flag.BoolVar(&global_user_streaming, "streaming", false, "Keep processing keys, even after a match")
 	flag.BoolVar(&global_user_fingerprint, "fingerprint", false, "Match against fingerprint instead of public key")
 	flag.IntVar(&global_user_update_rate, "update-rate", 1, "frequency for updates in seconds")
+	flag.IntVar(&global_user_threads, "threads", 0, "number of threads to use")
 	flag.Parse()
 	initTime = time.Now()
 
@@ -178,8 +180,14 @@ func main() {
 		syscall.Setpriority(syscall.PRIO_PROCESS, 0, 20)
 	}
 	//	input threads, else numcpu
-	for i := 1; i <= runtime.NumCPU(); i++ {
-		go findsshkeys()
+	if global_user_threads == 0 {
+		for i := 1; i <= runtime.NumCPU(); i++ {
+			go findsshkeys()
+		}
+	} else {
+		for i := 1; i <= global_user_threads; i++ {
+			go findsshkeys()
+		}
 	}
 
 	fmt.Fprintf(os.Stderr, "Press Ctrl+C to end\n")
