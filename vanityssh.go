@@ -26,7 +26,7 @@ var global_user_insensitive bool
 var global_user_streaming bool
 var global_user_fingerprint bool
 
-//var flagvar int
+// var flagvar int
 var global_counter int64
 var start time.Time
 var re *regexp.Regexp
@@ -116,8 +116,15 @@ func main() {
 	}
 
 	fmt.Printf("Press Ctrl+C to end\n")
+
+	deleteLine := "\033[2K\r"
+	cursorUp := "\033[A"
+
 	for {
-		fmt.Printf("\033[2K\r%s%d", "SSH Keys Processed = ", global_counter)
+		fmt.Printf("%s%s%s", deleteLine, cursorUp, deleteLine)
+		fmt.Printf("SSH Keys Processed = %d\n", global_counter)
+		fmt.Printf("kKeys/s = %.2f",
+			(float64(global_counter) / time.Since(start).Seconds() / 1000))
 		time.Sleep(250 * time.Millisecond)
 	}
 
