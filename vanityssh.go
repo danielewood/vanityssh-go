@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/mikesmitty/edkey"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
@@ -122,9 +123,10 @@ func main() {
 
 	for {
 		fmt.Printf("%s%s%s", deleteLine, cursorUp, deleteLine)
-		fmt.Printf("SSH Keys Processed = %d\n", global_counter)
+		fmt.Printf("SSH Keys Processed = %s\n", humanize.Comma(global_counter))
 		fmt.Printf("kKeys/s = %.2f",
 			(float64(global_counter) / time.Since(start).Seconds() / 1000))
+
 		time.Sleep(250 * time.Millisecond)
 	}
 
