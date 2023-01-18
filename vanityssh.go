@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"os/signal"
 	"regexp"
@@ -110,6 +111,11 @@ func getAuthorizedKey(key ssh.PublicKey) string {
 	return strings.TrimSpace(string(ssh.MarshalAuthorizedKey(key)))
 }
 
+func expMovingAverage(value, oldValue, deltaTime, timeWindow float64) float64 {
+	alpha := 1.0 - math.Exp(-deltaTime/timeWindow)
+	return alpha*value + (1.0-alpha)*oldValue
+}
+
 func main() {
 	//	input threads, else numcpu
 	for i := 1; i <= runtime.NumCPU(); i++ {
@@ -120,19 +126,29 @@ func main() {
 
 	deleteLine := "\033[2K\r"
 	cursorUp := "\033[A"
-	prev_counter := global_counter
-	prev_time := time.Now()
+	avgKeyRate := float64(global_counter)
+	oldCounter := global_counter
+	oldTime := time.Now()
 
 	for {
 		time.Sleep(250 * time.Millisecond)
+		relTime := time.Now().Sub(oldTime).Seconds()
 
-		relTime := time.Now().Sub(prev_time).Seconds()
+		// on first run, initialize the moving average with the current rate
+		// instead of starting at 0 and taking many seconds to tend towards the
+		// actual key rate
+		if oldCounter == 0 {
+			avgKeyRate = float64(global_counter)
+		}
 
 		fmt.Printf("%s%s%s", deleteLine, cursorUp, deleteLine)
 		fmt.Printf("SSH Keys Processed = %s\n", humanize.Comma(global_counter))
-		fmt.Printf("kKeys/s = %.2f", float64(global_counter-prev_counter)/relTime/1000)
-		prev_counter = global_counter
-		prev_time = time.Now()
+		fmt.Printf("kKeys/s = %.2f", avgKeyRate/relTime/1000)
+
+		avgKeyRate = expMovingAverage(
+			float64(global_counter-oldCounter), avgKeyRate, relTime, 5)
+		oldCounter = global_counter
+		oldTime = time.Now()
 	}
 
 	WaitForCtrlC()
