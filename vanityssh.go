@@ -120,14 +120,19 @@ func main() {
 
 	deleteLine := "\033[2K\r"
 	cursorUp := "\033[A"
+	prev_counter := global_counter
+	prev_time := time.Now()
 
 	for {
+		time.Sleep(250 * time.Millisecond)
+
+		relTime := time.Now().Sub(prev_time).Seconds()
+
 		fmt.Printf("%s%s%s", deleteLine, cursorUp, deleteLine)
 		fmt.Printf("SSH Keys Processed = %s\n", humanize.Comma(global_counter))
-		fmt.Printf("kKeys/s = %.2f",
-			(float64(global_counter) / time.Since(start).Seconds() / 1000))
-
-		time.Sleep(250 * time.Millisecond)
+		fmt.Printf("kKeys/s = %.2f", float64(global_counter-prev_counter)/relTime/1000)
+		prev_counter = global_counter
+		prev_time = time.Now()
 	}
 
 	WaitForCtrlC()
