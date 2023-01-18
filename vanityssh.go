@@ -132,7 +132,7 @@ func main() {
 
 	for {
 		time.Sleep(250 * time.Millisecond)
-		relTime := time.Now().Sub(oldTime).Seconds()
+		relTime := time.Since(oldTime).Seconds()
 
 		// on first run, initialize the moving average with the current rate
 		// instead of starting at 0 and taking many seconds to tend towards the
