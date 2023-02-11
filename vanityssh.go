@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"os/signal"
 	"regexp"
@@ -16,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/mikesmitty/edkey"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
@@ -26,7 +28,7 @@ var global_user_insensitive bool
 var global_user_streaming bool
 var global_user_fingerprint bool
 
-//var flagvar int
+// var flagvar int
 var global_counter int64
 var start time.Time
 var re *regexp.Regexp
@@ -109,6 +111,11 @@ func getAuthorizedKey(key ssh.PublicKey) string {
 	return strings.TrimSpace(string(ssh.MarshalAuthorizedKey(key)))
 }
 
+func expMovingAverage(value, oldValue, deltaTime, timeWindow float64) float64 {
+	alpha := 1.0 - math.Exp(-deltaTime/timeWindow)
+	return alpha*value + (1.0-alpha)*oldValue
+}
+
 func main() {
 	//	input threads, else numcpu
 	for i := 1; i <= runtime.NumCPU(); i++ {
@@ -116,9 +123,32 @@ func main() {
 	}
 
 	fmt.Printf("Press Ctrl+C to end\n")
+
+	deleteLine := "\033[2K\r"
+	cursorUp := "\033[A"
+	avgKeyRate := float64(global_counter)
+	oldCounter := global_counter
+	oldTime := time.Now()
+
 	for {
-		fmt.Printf("\033[2K\r%s%d", "SSH Keys Processed = ", global_counter)
 		time.Sleep(250 * time.Millisecond)
+		relTime := time.Since(oldTime).Seconds()
+
+		// on first run, initialize the moving average with the current rate
+		// instead of starting at 0 and taking many seconds to tend towards the
+		// actual key rate
+		if oldCounter == 0 {
+			avgKeyRate = float64(global_counter)
+		}
+
+		fmt.Printf("%s%s%s", deleteLine, cursorUp, deleteLine)
+		fmt.Printf("SSH Keys Processed = %s\n", humanize.Comma(global_counter))
+		fmt.Printf("kKeys/s = %.2f", avgKeyRate/relTime/1000)
+
+		avgKeyRate = expMovingAverage(
+			float64(global_counter-oldCounter), avgKeyRate, relTime, 5)
+		oldCounter = global_counter
+		oldTime = time.Now()
 	}
 
 	WaitForCtrlC()
