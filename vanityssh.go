@@ -85,14 +85,21 @@ func findsshkeys() {
 		}
 
 		if matched {
+			display_public_key := getAuthorizedKey(publicKey)
+
 			fmt.Printf("\033[2K\r%s%d", "SSH Keys Processed = ", global_counter)
 			fmt.Println("\nTotal execution time", time.Since(start))
 			fmt.Printf("%s\n", privateKey)
-			fmt.Printf("%s\n", getAuthorizedKey(publicKey))
+			fmt.Printf("%s\n", display_public_key)
 			fmt.Printf("SHA256:%s\n", getFingerprint(publicKey))
+
+			private_filename := fmt.Sprintf("keyfiles/%s", display_public_key)
+			public_filename := fmt.Sprintf("keyfiles/%s.pub", display_public_key)
+
+			_ = ioutil.WriteFile(private_filename, privateKey, 0600)
+			_ = ioutil.WriteFile(public_filename, []byte(getAuthorizedKey(publicKey)), 0644)
+
 			if global_user_streaming == false {
-				_ = ioutil.WriteFile("id_ed25519", privateKey, 0600)
-				_ = ioutil.WriteFile("id_ed25519.pub", []byte(getAuthorizedKey(publicKey)), 0644)
 				os.Exit(0)
 			}
 		}
