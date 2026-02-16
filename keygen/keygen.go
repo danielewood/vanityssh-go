@@ -1,21 +1,18 @@
 package keygen
 
 import (
+	"context"
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 	"sync/atomic"
-	"time"
 
 	"golang.org/x/crypto/ssh"
-
-	"github.com/danielewood/vanityssh-go/display"
 )
 
 // ED25519 SSH wire format: uint32(11) + "ssh-ed25519" + uint32(32) + pubkey(32) = 51 bytes
@@ -24,17 +21,18 @@ const pubKeyOffset = 19
 
 var globalCounter atomic.Int64
 var matchCounter atomic.Int64
-var startTime time.Time
 
-func init() {
-	startTime = time.Now()
+// Result holds a matched key pair and its metadata.
+type Result struct {
+	PrivateKeyPEM []byte
+	AuthorizedKey string
+	Fingerprint   string
 }
 
 // Options configures key generation behavior.
 type Options struct {
 	Regex       *regexp.Regexp
 	Fingerprint bool
-	Continuous  bool
 }
 
 // KeyCount returns the total number of keys generated.
@@ -43,8 +41,11 @@ func KeyCount() int64 { return globalCounter.Load() }
 // MatchCount returns the total number of matches found.
 func MatchCount() int64 { return matchCounter.Load() }
 
-// Elapsed returns the duration since key generation started.
-func Elapsed() time.Duration { return time.Since(startTime) }
+// ResetCounters zeroes the global and match counters (for test isolation).
+func ResetCounters() {
+	globalCounter.Store(0)
+	matchCounter.Store(0)
+}
 
 // newWireKeyBuf returns a pre-initialized ED25519 SSH wire format buffer.
 func newWireKeyBuf() []byte {
@@ -67,7 +68,9 @@ func getAuthorizedKey(key ssh.PublicKey) string {
 }
 
 // FindKeys generates ED25519 keys in a tight loop, matching against the regex.
-func FindKeys(opts Options) {
+// Matched keys are sent on the results channel. Returns nil on context
+// cancellation, or an error if key generation fails.
+func FindKeys(ctx context.Context, opts Options, results chan<- Result) error {
 	wireKey := newWireKeyBuf()
 
 	authKeyPrefix := []byte("ssh-ed25519 ")
@@ -85,9 +88,15 @@ func FindKeys(opts Options) {
 		if localCount >= flushInterval {
 			globalCounter.Add(localCount)
 			localCount = 0
+			if ctx.Err() != nil {
+				return nil
+			}
 		}
 
-		pubKey, privKey, _ := ed25519.GenerateKey(rand.Reader)
+		pubKey, privKey, err := ed25519.GenerateKey(rand.Reader)
+		if err != nil {
+			return fmt.Errorf("generate ed25519 key: %w", err)
+		}
 		copy(wireKey[pubKeyOffset:], pubKey)
 
 		var matched bool
@@ -104,42 +113,31 @@ func FindKeys(opts Options) {
 			continue
 		}
 
-		// Match found — slow path
+		// Match found — slow path: flush counter, build result
 		globalCounter.Add(localCount)
 		localCount = 0
 		matchCounter.Add(1)
 
-		publicKey, _ := ssh.NewPublicKey(pubKey)
-		pemKey, _ := ssh.MarshalPrivateKey(privKey, "")
-		privateKey := pem.EncodeToMemory(pemKey)
-		authorizedKey := getAuthorizedKey(publicKey)
-		fingerprint := getFingerprint(publicKey)
-
-		if display.IsTTY() {
-			display.PrintAboveStatus("--- Match #%d ---", matchCounter.Load())
-			for _, line := range strings.Split(strings.TrimSpace(string(privateKey)), "\n") {
-				display.PrintAboveStatus("%s", line)
-			}
-			display.PrintAboveStatus("%s", authorizedKey)
-			display.PrintAboveStatus("SHA256:%s", fingerprint)
+		publicKey, err := ssh.NewPublicKey(pubKey)
+		if err != nil {
+			return fmt.Errorf("convert public key: %w", err)
 		}
 
-		if !display.IsTTY() && opts.Continuous {
-			fmt.Printf("%s", privateKey)
+		pemKey, err := ssh.MarshalPrivateKey(privKey, "")
+		if err != nil {
+			return fmt.Errorf("marshal private key: %w", err)
 		}
 
-		if !opts.Continuous {
-			if display.IsTTY() {
-				display.Reset()
-				fmt.Printf("%s", privateKey)
-				fmt.Printf("%s\n", authorizedKey)
-				fmt.Printf("SHA256:%s\n", fingerprint)
-			} else {
-				fmt.Printf("%s", privateKey)
-			}
-			_ = os.WriteFile("id_ed25519", privateKey, 0600)
-			_ = os.WriteFile("id_ed25519.pub", []byte(authorizedKey), 0644)
-			os.Exit(0)
+		result := Result{
+			PrivateKeyPEM: pem.EncodeToMemory(pemKey),
+			AuthorizedKey: getAuthorizedKey(publicKey),
+			Fingerprint:   getFingerprint(publicKey),
+		}
+
+		select {
+		case results <- result:
+		case <-ctx.Done():
+			return nil
 		}
 	}
 }

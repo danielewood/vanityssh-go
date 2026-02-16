@@ -36,3 +36,20 @@ nfpms:
 
 checksum:
   name_template: checksums.txt
+
+homebrew_casks:
+  - name: vanityssh
+    binaries:
+      - vanityssh
+    repository:
+      owner: sensiblebit
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Casks
+    homepage: https://github.com/danielewood/vanityssh-go
+    description: Generate ED25519 SSH keys with vanity public keys
+    custom_block: |
+      postflight do
+        system_command "/usr/bin/xattr",
+                       args: ["-dr", "com.apple.quarantine", "#{staged_path}"]
+      end
