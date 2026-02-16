@@ -22,7 +22,6 @@ import (
 	"github.com/TylerBrock/colorjson"
 	"github.com/klauspost/cpuid/v2"
 	"github.com/mackerelio/go-osstat/cpu"
-	"github.com/mikesmitty/edkey"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/term"
@@ -153,10 +152,7 @@ func findSSHKeys() {
 
 		if matched {
 			matchCount.Add(1)
-			pemKey := &pem.Block{
-				Type:  "OPENSSH PRIVATE KEY",
-				Bytes: edkey.MarshalED25519PrivateKey(privKey),
-			}
+			pemKey, _ := ssh.MarshalPrivateKey(privKey, "")
 			privateKey := pem.EncodeToMemory(pemKey)
 			authorizedKey := getAuthorizedKey(publicKey)
 			fingerprint := getFingerprint(publicKey)

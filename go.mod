@@ -4,7 +4,6 @@ go 1.24.0
 
 require (
 	github.com/TylerBrock/colorjson v0.0.0-20200706003622-8a50f05110d2
-	github.com/mikesmitty/edkey v0.0.0-20170222072505-3356ea4e686a
 	golang.org/x/crypto v0.48.0
 )
 
