@@ -1,0 +1,10 @@
+name: Pre-commit autoupdate
+
+on:
+  schedule:
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+
+jobs:
+  autoupdate:
+    uses: sensiblebit/.github/.github/workflows/pre-commit-autoupdate.yml@main

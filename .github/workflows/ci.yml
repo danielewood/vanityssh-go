@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  pr-conventions:
+    if: github.event_name == 'pull_request'
+    uses: sensiblebit/.github/.github/workflows/pr-conventions.yml@main
+
+  go-ci:
+    uses: sensiblebit/.github/.github/workflows/go-ci.yml@main
+
+  lint:
+    uses: sensiblebit/.github/.github/workflows/lint.yml@main
+
+  ci-ok:
+    if: always()
+    needs: [pr-conventions, go-ci, lint]
+    runs-on: ubuntu-latest
+    steps:
+      - name: All checks passed
+        run: |
+          results=( "${{ needs.pr-conventions.result }}" "${{ needs.go-ci.result }}" "${{ needs.lint.result }}" )
+          for r in "${results[@]}"; do
+            if [[ "$r" == "failure" ]]; then
+              echo "::error::One or more checks failed"
+              exit 1
+            fi
+          done

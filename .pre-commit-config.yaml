@@ -1,0 +1,22 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: no-commit-to-branch
+        args: [--branch, main]
+
+  - repo: https://github.com/sensiblebit/.github
+    rev: aad3a4efed49e8753532c6e4d58d94ed888d2b6e
+    hooks:
+      - id: branch-name
+      - id: commit-message
+        stages: [commit-msg]
+      - id: goimports
+      - id: go-vet
+      - id: go-build
+      - id: go-test
+
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.44.0
+    hooks:
+      - id: markdownlint

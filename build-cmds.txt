@@ -1,2 +1,0 @@
-env GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" vanityssh.go && go build -ldflags="-s -w" vanityssh.go
-upx --brute vanityssh.exe && upx --brute vanityssh
