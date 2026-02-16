@@ -19,10 +19,12 @@ import (
 	"syscall"
 	"time"
 
+	"crypto/ed25519"
+
 	"github.com/TylerBrock/colorjson"
 	"github.com/klauspost/cpuid/v2"
 	"github.com/mackerelio/go-osstat/cpu"
-	"golang.org/x/crypto/ed25519"
+
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/term"
 )
@@ -45,6 +47,12 @@ var re *regexp.Regexp
 var err error
 var outputMu sync.Mutex
 var termHeight int
+var isTTY bool
+
+// ED25519 SSH wire format constants
+// Wire format: uint32(11) + "ssh-ed25519" + uint32(32) + pubkey(32) = 51 bytes
+const wireKeyLen = 51
+const pubKeyOffset = 19 // offset where the 32-byte public key starts
 
 type json_stats struct {
 	Num_keys    int64   `json:"num_keys"`
@@ -95,9 +103,14 @@ func printJsonStruct(json_struct any, indent int) {
 }
 
 // printAboveStatus prints content in the scroll region above the pinned status bar.
+// In non-TTY mode, prints directly to stderr.
 func printAboveStatus(format string, args ...any) {
 	outputMu.Lock()
 	defer outputMu.Unlock()
+	if !isTTY {
+		fmt.Fprintf(os.Stderr, format+"\n", args...)
+		return
+	}
 	// Save cursor, move to scroll region, print, restore cursor
 	fmt.Fprintf(os.Stderr, "\033[s\033[%d;1H", termHeight) // save + move to status line
 	fmt.Fprintf(os.Stderr, "\033[1A")                      // move up one into scroll region
@@ -137,45 +150,96 @@ func resetScrollRegion() {
 	fmt.Fprintf(os.Stderr, "\033[%d;1H\n", termHeight) // move past status line
 }
 
-func findSSHKeys() {
-	for {
-		global_counter.Add(1)
-		pubKey, privKey, _ := ed25519.GenerateKey(rand.Reader)
-		publicKey, _ := ssh.NewPublicKey(pubKey)
+// newWireKeyBuf returns a pre-initialized ED25519 SSH wire format buffer.
+func newWireKeyBuf() []byte {
+	buf := make([]byte, wireKeyLen)
+	buf[3] = 11 // big-endian uint32(11) — length of "ssh-ed25519"
+	copy(buf[4:15], "ssh-ed25519")
+	buf[18] = 32 // big-endian uint32(32) — length of public key
+	return buf
+}
 
-		matched := false
-		if flag_fingerprint {
-			matched = re.MatchString(getFingerprint(publicKey))
-		} else {
-			matched = re.MatchString(getAuthorizedKey(publicKey))
+func findSSHKeys() {
+	// Pre-allocate per-goroutine buffers to avoid allocations in the hot loop
+	wireKey := newWireKeyBuf()
+
+	// Authorized key: "ssh-ed25519 " + base64(wireKey)
+	authKeyPrefix := []byte("ssh-ed25519 ")
+	b64Len := base64.StdEncoding.EncodedLen(wireKeyLen)
+	authKeyBuf := make([]byte, len(authKeyPrefix)+b64Len)
+	copy(authKeyBuf, authKeyPrefix)
+
+	// Fingerprint: base64(SHA256(wireKey))
+	fpBuf := make([]byte, base64.StdEncoding.EncodedLen(sha256.Size))
+
+	var localCount int64
+	const flushInterval = 1024
+
+	for {
+		localCount++
+		if localCount >= flushInterval {
+			global_counter.Add(localCount)
+			localCount = 0
 		}
 
-		if matched {
-			matchCount.Add(1)
-			pemKey, _ := ssh.MarshalPrivateKey(privKey, "")
-			privateKey := pem.EncodeToMemory(pemKey)
-			authorizedKey := getAuthorizedKey(publicKey)
-			fingerprint := getFingerprint(publicKey)
+		pubKey, privKey, _ := ed25519.GenerateKey(rand.Reader)
 
-			if flag_json || flag_json_verbose {
-				printJsonStruct(json_keyout{string(privateKey), authorizedKey, fingerprint}, flag_json_indent)
-			} else {
-				printAboveStatus("--- Match #%d ---", matchCount.Load())
-				for _, line := range strings.Split(strings.TrimSpace(string(privateKey)), "\n") {
-					printAboveStatus("%s", line)
-				}
-				printAboveStatus("%s", authorizedKey)
-				printAboveStatus("SHA256:%s", fingerprint)
+		// Build wire format directly — no ssh.NewPublicKey allocation
+		copy(wireKey[pubKeyOffset:], pubKey)
+
+		var matched bool
+		if flag_fingerprint {
+			sum := sha256.Sum256(wireKey)
+			base64.StdEncoding.Encode(fpBuf, sum[:])
+			matched = re.Match(fpBuf)
+		} else {
+			base64.StdEncoding.Encode(authKeyBuf[len(authKeyPrefix):], wireKey)
+			matched = re.Match(authKeyBuf)
+		}
+
+		if !matched {
+			continue
+		}
+
+		// Match found — slow path, allocations are fine
+		global_counter.Add(localCount)
+		localCount = 0
+		matchCount.Add(1)
+
+		publicKey, _ := ssh.NewPublicKey(pubKey)
+		pemKey, _ := ssh.MarshalPrivateKey(privKey, "")
+		privateKey := pem.EncodeToMemory(pemKey)
+		authorizedKey := getAuthorizedKey(publicKey)
+		fingerprint := getFingerprint(publicKey)
+
+		if flag_json || flag_json_verbose {
+			printJsonStruct(json_keyout{string(privateKey), authorizedKey, fingerprint}, flag_json_indent)
+		} else if isTTY {
+			printAboveStatus("--- Match #%d ---", matchCount.Load())
+			for _, line := range strings.Split(strings.TrimSpace(string(privateKey)), "\n") {
+				printAboveStatus("%s", line)
 			}
-			if !flag_forever {
+			printAboveStatus("%s", authorizedKey)
+			printAboveStatus("SHA256:%s", fingerprint)
+		}
+
+		// When piping in streaming mode, emit private keys to stdout
+		if !isTTY && flag_forever {
+			fmt.Printf("%s", privateKey)
+		}
+
+		if !flag_forever {
+			if isTTY {
 				resetScrollRegion()
 				fmt.Printf("%s", privateKey)
 				fmt.Printf("%s\n", authorizedKey)
 				fmt.Printf("SHA256:%s\n", fingerprint)
-				_ = os.WriteFile("id_ed25519", privateKey, 0600)
-				_ = os.WriteFile("id_ed25519.pub", []byte(authorizedKey), 0644)
-				os.Exit(0)
+			} else {
+				fmt.Printf("%s", privateKey)
 			}
+			_ = os.WriteFile("id_ed25519", privateKey, 0600)
+			_ = os.WriteFile("id_ed25519.pub", []byte(authorizedKey), 0644)
+			os.Exit(0)
 		}
 	}
 }
@@ -246,9 +310,10 @@ func main() {
 	}
 
 	initTime = time.Now()
+	isTTY = term.IsTerminal(int(os.Stdout.Fd()))
 
-	// set up pinned status bar for interactive (non-JSON) mode
-	if !(flag_json || flag_json_verbose) {
+	// set up pinned status bar for interactive (non-JSON) TTY mode
+	if isTTY && !(flag_json || flag_json_verbose) {
 		setupScrollRegion()
 
 		// clean up terminal on exit or interrupt
@@ -308,15 +373,17 @@ func main() {
 			}
 		} else {
 			time.Sleep(250 * time.Millisecond)
-			count := global_counter.Load()
-			elapsed := time.Since(initTime)
-			rate := int64(float64(count) / elapsed.Seconds())
-			matches := matchCount.Load()
+			if isTTY {
+				count := global_counter.Load()
+				elapsed := time.Since(initTime)
+				rate := int64(float64(count) / elapsed.Seconds())
+				matches := matchCount.Load()
 
-			status := fmt.Sprintf("Keys: %s | Rate: %s/s | Matches: %d | Elapsed: %s | Ctrl+C to exit",
-				formatCount(count), formatCount(rate), matches,
-				elapsed.Truncate(time.Second))
-			updateStatusBar(status)
+				status := fmt.Sprintf("Keys: %s | Rate: %s/s | Matches: %d | Elapsed: %s | Ctrl+C to exit",
+					formatCount(count), formatCount(rate), matches,
+					elapsed.Truncate(time.Second))
+				updateStatusBar(status)
+			}
 		}
 	}
 }
