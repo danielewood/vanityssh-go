@@ -2,7 +2,7 @@ name: Pre-commit autoupdate
 
 on:
   schedule:
-    - cron: "0 8 * * 1"
+    - cron: "0 8 * * *"
   workflow_dispatch:
 
 jobs:

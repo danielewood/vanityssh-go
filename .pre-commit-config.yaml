@@ -1,14 +1,4 @@
 repos:
-  - repo: local
-    hooks:
-      - id: pre-commit-autoupdate-sensiblebit
-        name: autoupdate sensiblebit hooks
-        language: system
-        entry: bash -c 'cp .pre-commit-config.yaml .pre-commit-config.yaml.bak && pre-commit autoupdate --repo https://github.com/sensiblebit/.github >/dev/null 2>&1 && if ! diff -q .pre-commit-config.yaml .pre-commit-config.yaml.bak >/dev/null 2>&1; then rm .pre-commit-config.yaml.bak; git add .pre-commit-config.yaml; echo "Updated sensiblebit hook rev — staged .pre-commit-config.yaml"; exit 1; else rm .pre-commit-config.yaml.bak; fi'
-        files: ^$
-        always_run: true
-        pass_filenames: false
-
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
