@@ -8,7 +8,10 @@ require (
 	golang.org/x/crypto v0.48.0
 )
 
-require github.com/klauspost/cpuid/v2 v2.3.0
+require (
+	github.com/klauspost/cpuid/v2 v2.3.0
+	golang.org/x/term v0.40.0
+)
 
 require (
 	github.com/fatih/color v1.18.0 // indirect
