@@ -170,6 +170,11 @@ golangci-lint run      # Lint (errcheck, unused, staticcheck, etc.)
   cancellation mid-generation, concurrent counter access, TTY vs non-TTY
   output, fingerprint vs public key matching modes.
 
+### Ralph Loop — iterative test hardening
+
+Invoke `/ralph` for comprehensive test validation. Full protocol in
+`.claude/skills/ralph/SKILL.md`.
+
 ---
 
 ## 9 — Logging & Observability
