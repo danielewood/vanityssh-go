@@ -165,6 +165,9 @@ func findSSHKeys() {
 				printJsonStruct(json_keyout{string(privateKey), authorizedKey, fingerprint}, flag_json_indent)
 			} else {
 				printAboveStatus("--- Match #%d ---", matchCount.Load())
+				for _, line := range strings.Split(strings.TrimSpace(string(privateKey)), "\n") {
+					printAboveStatus("%s", line)
+				}
 				printAboveStatus("%s", authorizedKey)
 				printAboveStatus("SHA256:%s", fingerprint)
 			}
