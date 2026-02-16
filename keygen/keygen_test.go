@@ -89,7 +89,6 @@ func TestGetAuthorizedKey(t *testing.T) {
 
 func TestFindKeysMatchesPublicKey(t *testing.T) {
 	t.Parallel()
-	ResetCounters()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -124,7 +123,6 @@ func TestFindKeysMatchesPublicKey(t *testing.T) {
 
 func TestFindKeysMatchesFingerprint(t *testing.T) {
 	t.Parallel()
-	ResetCounters()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -153,7 +151,6 @@ func TestFindKeysMatchesFingerprint(t *testing.T) {
 
 func TestFindKeysCancellation(t *testing.T) {
 	t.Parallel()
-	ResetCounters()
 
 	// Impossible pattern — will never match
 	re := regexp.MustCompile(`^IMPOSSIBLE_PATTERN_THAT_NEVER_MATCHES$`)
@@ -182,7 +179,6 @@ func TestFindKeysCancellation(t *testing.T) {
 
 func TestFindKeysCounterIncrement(t *testing.T) {
 	t.Parallel()
-	ResetCounters()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
