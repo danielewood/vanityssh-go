@@ -31,7 +31,7 @@ vanityssh generates ED25519 SSH key pairs at high speed and matches
 the resulting public keys (or SHA256 fingerprints) against a regex pattern.
 
 On first match, the key pair is written to id_ed25519 and id_ed25519.pub
-in the current directory. Use --streaming to keep finding keys.
+in the current directory. Use --continuous to keep finding keys.
 
 When piping, only the private key is written to stdout.
 
@@ -39,10 +39,10 @@ Usage:
   vanityssh <regex> [flags]
 
 Flags:
+  -c, --continuous    keep finding keys after a match
   -f, --fingerprint   match against SHA256 fingerprint instead of public key
   -h, --help          help for vanityssh
-  -s, --streaming     keep finding keys after a match
-  -t, --threads int   number of goroutines (default: number of CPUs)
+  -j, --jobs int      number of parallel workers (default: number of CPUs)
   -v, --version       version for vanityssh
 ```
 
@@ -54,10 +54,10 @@ Find a key ending with "vanity" (case-insensitive):
 vanityssh '(?i)vanity$'
 ```
 
-Find a key ending with "dwd" (case-sensitive), streaming mode:
+Find a key ending with "dwd" (case-sensitive), continuous mode:
 
 ```bash
-vanityssh -s 'dwd$'
+vanityssh -c 'dwd$'
 ```
 
 Find a key whose SHA256 fingerprint starts with `0000`:
@@ -74,8 +74,8 @@ vanityssh 'pattern$' > my_key
 
 ## Resource usage
 
-vanityssh uses all available CPU cores by default. Use `-t` to limit threads.
-With `--streaming` or a very difficult pattern, it will run until you press
+vanityssh uses all available CPU cores by default. Use `-j` to limit workers.
+With `--continuous` or a very difficult pattern, it will run until you press
 Ctrl+C.
 
 ## License

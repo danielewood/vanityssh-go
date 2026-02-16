@@ -17,8 +17,8 @@ import (
 
 var (
 	flagFingerprint bool
-	flagStreaming   bool
-	flagThreads     int
+	flagContinuous  bool
+	flagJobs        int
 )
 
 var rootCmd = &cobra.Command{
@@ -28,7 +28,7 @@ var rootCmd = &cobra.Command{
 the resulting public keys (or SHA256 fingerprints) against a regex pattern.
 
 On first match, the key pair is written to id_ed25519 and id_ed25519.pub
-in the current directory. Use --streaming to keep finding keys.
+in the current directory. Use --continuous to keep finding keys.
 
 When piping, only the private key is written to stdout.`,
 	Args: cobra.ExactArgs(1),
@@ -37,8 +37,8 @@ When piping, only the private key is written to stdout.`,
 
 func init() {
 	rootCmd.Flags().BoolVarP(&flagFingerprint, "fingerprint", "f", false, "match against SHA256 fingerprint instead of public key")
-	rootCmd.Flags().BoolVarP(&flagStreaming, "streaming", "s", false, "keep finding keys after a match")
-	rootCmd.Flags().IntVarP(&flagThreads, "threads", "t", 0, "number of goroutines (default: number of CPUs)")
+	rootCmd.Flags().BoolVarP(&flagContinuous, "continuous", "c", false, "keep finding keys after a match")
+	rootCmd.Flags().IntVarP(&flagJobs, "jobs", "j", 0, "number of parallel workers (default: number of CPUs)")
 }
 
 // SetVersion sets the version string for the root command.
@@ -70,18 +70,18 @@ func run(_ *cobra.Command, args []string) error {
 		}()
 	}
 
-	numThreads := flagThreads
-	if numThreads == 0 {
-		numThreads = runtime.NumCPU()
+	numJobs := flagJobs
+	if numJobs == 0 {
+		numJobs = runtime.NumCPU()
 	}
 
 	opts := keygen.Options{
 		Regex:       re,
 		Fingerprint: flagFingerprint,
-		Streaming:   flagStreaming,
+		Continuous:  flagContinuous,
 	}
 
-	for i := 0; i < numThreads; i++ {
+	for i := 0; i < numJobs; i++ {
 		go keygen.FindKeys(opts)
 	}
 

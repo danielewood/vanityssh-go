@@ -34,7 +34,7 @@ func init() {
 type Options struct {
 	Regex       *regexp.Regexp
 	Fingerprint bool
-	Streaming   bool
+	Continuous  bool
 }
 
 // KeyCount returns the total number of keys generated.
@@ -124,11 +124,11 @@ func FindKeys(opts Options) {
 			display.PrintAboveStatus("SHA256:%s", fingerprint)
 		}
 
-		if !display.IsTTY() && opts.Streaming {
+		if !display.IsTTY() && opts.Continuous {
 			fmt.Printf("%s", privateKey)
 		}
 
-		if !opts.Streaming {
+		if !opts.Continuous {
 			if display.IsTTY() {
 				display.Reset()
 				fmt.Printf("%s", privateKey)
