@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -21,6 +22,9 @@ const pubKeyOffset = 19
 
 var globalCounter atomic.Int64
 var matchCounter atomic.Int64
+
+// ErrNilRegex is returned when FindKeys is called with a nil regex.
+var ErrNilRegex = errors.New("regex must not be nil")
 
 // Result holds a matched key pair and its metadata.
 type Result struct {
@@ -71,6 +75,9 @@ func getAuthorizedKey(key ssh.PublicKey) string {
 // Matched keys are sent on the results channel. Returns nil on context
 // cancellation, or an error if key generation fails.
 func FindKeys(ctx context.Context, opts Options, results chan<- Result) error {
+	if opts.Regex == nil {
+		return ErrNilRegex
+	}
 	wireKey := newWireKeyBuf()
 
 	authKeyPrefix := []byte("ssh-ed25519 ")

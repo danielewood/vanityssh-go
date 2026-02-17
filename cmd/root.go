@@ -80,6 +80,9 @@ func run(_ *cobra.Command, args []string) error {
 	}()
 
 	numJobs := flagJobs
+	if numJobs < 0 {
+		return fmt.Errorf("--jobs must be non-negative, got %d", numJobs)
+	}
 	if numJobs == 0 {
 		numJobs = runtime.NumCPU()
 	}
@@ -154,7 +157,7 @@ func handleResult(r keygen.Result) error {
 		display.PrintAboveStatus("SHA256:%s", r.Fingerprint)
 	}
 
-	if !display.IsTTY() && flagContinuous {
+	if flagContinuous {
 		fmt.Printf("%s", r.PrivateKeyPEM)
 	}
 

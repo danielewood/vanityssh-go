@@ -7,12 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix data race on `isTTY` flag by converting to `atomic.Bool`
+- Fix `Reset()` writing to stderr without holding the display mutex
+- Fix `UpdateStatusBar` writing ANSI escapes in non-TTY environments
+- Fix `FormatCount` for negative numbers and `math.MinInt64` overflow
+- Clamp terminal height to minimum 3 to prevent invalid ANSI sequences
+- Reject negative `--jobs` values that caused the program to hang
+- Return `ErrNilRegex` from `FindKeys` instead of panicking on nil regex
+- Fix `OverrideTTY` data race on `termHeight` (CC-3: missing mutex)
+- Fix `--continuous` in TTY mode silently discarding matched keys
+
+### Tests
+
+- Add `cmd` test suite: CLI validation, `handleResult` file writing and
+  permissions, TTY/non-TTY output paths, write-error propagation, flag
+  wiring, end-to-end pipeline
+- Add `display` TTY-mode tests, concurrency stress tests, and edge cases
+- Add `keygen` tests: cancellation, blocked-send, selective regex, concurrent
+  workers, hot-path/slow-path equivalence, fingerprint-mode isolation
+
 ### Added
 
 - Context-based goroutine lifecycle with `errgroup` for clean shutdown
 - `keygen.Result` type — `FindKeys` is now a pure worker sending results via channel
 - Error handling for all key generation operations (no silent suppression)
-- Test suite for `display` (FormatCount, IsTTY) and `keygen` (helpers + FindKeys)
 - Homebrew tap via GoReleaser (`brew install sensiblebit/tap/vanityssh`)
 - Cobra CLI rewrite with `--fingerprint`, `--continuous`, `--jobs` flags
 - Pinned terminal status bar with scroll region for TTY output
@@ -22,6 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pre-commit hooks (branch naming, commit messages, go-vet, go-build, go-test)
 - Dependabot for GitHub Actions and Go module updates
 - Makefile with build, test, vet targets
+- Export `ErrNilRegex` sentinel error for programmatic nil-regex detection
+  via `errors.Is`
 - CHANGELOG.md
 
 ### Changed
