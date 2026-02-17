@@ -318,7 +318,7 @@ Every PR runs parallel checks via reusable workflows
 (`.github/workflows/ci.yml`):
 
 | Check | What it validates |
-|---|---|
+| --- | --- |
 | PR Conventions | PR title, branch name, commit messages, verified commits |
 | Go CI | `go build`, `go vet`, goimports, `go test -race -count=1 ./...` |
 | Lint | golangci-lint (errcheck, staticcheck, unused, etc.), govulncheck, markdownlint |
