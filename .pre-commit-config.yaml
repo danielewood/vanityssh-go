@@ -12,6 +12,7 @@ repos:
       - id: commit-message
         stages: [commit-msg]
       - id: goimports
+      - id: go-fix
       - id: go-vet
       - id: go-build
       - id: go-test
