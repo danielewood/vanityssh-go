@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix duplicate match output in TTY single-match mode
+- Fix match counter showing inflated numbers with concurrent workers
+
 ## [0.1.0] - 2026-02-16
 
 ### Added

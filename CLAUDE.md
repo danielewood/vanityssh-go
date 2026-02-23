@@ -341,7 +341,7 @@ pre-commit run --all-files  # Manual run against all files
 ```
 
 Configured hooks: `no-commit-to-branch`, `branch-name`, `commit-message`
-(commit-msg stage), `goimports`, `go-vet`, `go-build`, `go-test`,
+(commit-msg stage), `goimports`, `go-fix`, `go-vet`, `go-build`, `go-test`,
 `markdownlint`.
 
 ### Tooling gates
