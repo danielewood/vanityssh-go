@@ -187,7 +187,7 @@ func TestHandleResult_NonTTY_SingleMode(t *testing.T) {
 
 	r := fakeResult(t)
 	got := captureStdout(t, func() {
-		if err := handleResult(r); err != nil {
+		if err := handleResult(r, 1); err != nil {
 			t.Fatalf("handleResult: %v", err)
 		}
 	})
@@ -222,7 +222,7 @@ func TestHandleResult_NonTTY_ContinuousMode(t *testing.T) {
 
 	r := fakeResult(t)
 	got := captureStdout(t, func() {
-		if err := handleResult(r); err != nil {
+		if err := handleResult(r, 1); err != nil {
 			t.Fatalf("handleResult: %v", err)
 		}
 	})
@@ -277,7 +277,7 @@ func TestHandleResult_WriteError_PrivateKey(t *testing.T) {
 
 	r := fakeResult(t)
 	got := captureStdout(t, func() {
-		err := handleResult(r)
+		err := handleResult(r, 1)
 		if err == nil {
 			t.Fatal("expected write error, got nil")
 		}
@@ -305,7 +305,7 @@ func TestHandleResult_WriteError_PublicKey(t *testing.T) {
 
 	r := fakeResult(t)
 	captureStdout(t, func() {
-		err := handleResult(r)
+		err := handleResult(r, 1)
 		if err == nil {
 			t.Fatal("expected write error, got nil")
 		}
@@ -475,7 +475,7 @@ func TestHandleResult_TTY_SingleMode(t *testing.T) {
 	var stdoutGot string
 	stderrGot := captureStderr(t, func() {
 		stdoutGot = captureStdout(t, func() {
-			if err := handleResult(r); err != nil {
+			if err := handleResult(r, 1); err != nil {
 				t.Fatalf("handleResult: %v", err)
 			}
 		})
@@ -487,8 +487,8 @@ func TestHandleResult_TTY_SingleMode(t *testing.T) {
 	if !strings.Contains(stdoutGot, r.AuthorizedKey) {
 		t.Error("stdout missing authorized key")
 	}
-	if !strings.Contains(stderrGot, "Match #") {
-		t.Error("stderr missing match header")
+	if strings.Contains(stderrGot, "Match #") {
+		t.Error("stderr should not contain match header in single mode")
 	}
 	if _, err := os.Stat(filepath.Join(dir, "id_ed25519")); err != nil {
 		t.Fatalf("private key file: %v", err)
@@ -511,7 +511,7 @@ func TestHandleResult_TTY_ContinuousMode(t *testing.T) {
 	var stdoutGot string
 	stderrGot := captureStderr(t, func() {
 		stdoutGot = captureStdout(t, func() {
-			if err := handleResult(r); err != nil {
+			if err := handleResult(r, 1); err != nil {
 				t.Fatalf("handleResult: %v", err)
 			}
 		})

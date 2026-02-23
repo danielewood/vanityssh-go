@@ -104,10 +104,12 @@ func run(_ *cobra.Command, args []string) error {
 
 	// Result consumer
 	g.Go(func() error {
+		var matchNum int
 		for {
 			select {
 			case r := <-results:
-				if err := handleResult(r); err != nil {
+				matchNum++
+				if err := handleResult(r, matchNum); err != nil {
 					return err
 				}
 				if !flagContinuous {
@@ -147,35 +149,35 @@ func run(_ *cobra.Command, args []string) error {
 	return g.Wait()
 }
 
-func handleResult(r keygen.Result) error {
-	if display.IsTTY() {
-		display.PrintAboveStatus("--- Match #%d ---", keygen.MatchCount())
-		for _, line := range strings.Split(strings.TrimSpace(string(r.PrivateKeyPEM)), "\n") {
-			display.PrintAboveStatus("%s", line)
+func handleResult(r keygen.Result, matchNum int) error {
+	if flagContinuous {
+		// Continuous mode: show match in scroll region (stderr) + stream PEM to stdout.
+		if display.IsTTY() {
+			display.PrintAboveStatus("--- Match #%d ---", matchNum)
+			for line := range strings.SplitSeq(strings.TrimSpace(string(r.PrivateKeyPEM)), "\n") {
+				display.PrintAboveStatus("%s", line)
+			}
+			display.PrintAboveStatus("%s", r.AuthorizedKey)
+			display.PrintAboveStatus("SHA256:%s", r.Fingerprint)
 		}
-		display.PrintAboveStatus("%s", r.AuthorizedKey)
-		display.PrintAboveStatus("SHA256:%s", r.Fingerprint)
+		fmt.Printf("%s", r.PrivateKeyPEM)
+		return nil
 	}
 
-	if flagContinuous {
+	// Single-match mode: tear down scroll region, print final output, write files.
+	if display.IsTTY() {
+		display.Reset()
+		fmt.Printf("%s", r.PrivateKeyPEM)
+		fmt.Printf("%s\n", r.AuthorizedKey)
+		fmt.Printf("SHA256:%s\n", r.Fingerprint)
+	} else {
 		fmt.Printf("%s", r.PrivateKeyPEM)
 	}
-
-	if !flagContinuous {
-		if display.IsTTY() {
-			display.Reset()
-			fmt.Printf("%s", r.PrivateKeyPEM)
-			fmt.Printf("%s\n", r.AuthorizedKey)
-			fmt.Printf("SHA256:%s\n", r.Fingerprint)
-		} else {
-			fmt.Printf("%s", r.PrivateKeyPEM)
-		}
-		if err := os.WriteFile("id_ed25519", r.PrivateKeyPEM, 0600); err != nil {
-			return fmt.Errorf("write private key: %w", err)
-		}
-		if err := os.WriteFile("id_ed25519.pub", []byte(r.AuthorizedKey), 0644); err != nil {
-			return fmt.Errorf("write public key: %w", err)
-		}
+	if err := os.WriteFile("id_ed25519", r.PrivateKeyPEM, 0600); err != nil {
+		return fmt.Errorf("write private key: %w", err)
+	}
+	if err := os.WriteFile("id_ed25519.pub", []byte(r.AuthorizedKey), 0644); err != nil {
+		return fmt.Errorf("write public key: %w", err)
 	}
 
 	return nil
