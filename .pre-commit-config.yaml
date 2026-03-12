@@ -1,23 +1,19 @@
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
-    hooks:
-      - id: no-commit-to-branch
-        args: [--branch, main]
-
   - repo: https://github.com/sensiblebit/.github
-    rev: 4e98a46c1fed27308583c0a86ee955739a137e36
+    rev: "ad268a51ad8ce705d2e1d4010700a334ea3ea3f9"
     hooks:
       - id: branch-name
       - id: commit-message
-        stages: [commit-msg]
+      - id: go-mod-update
+        stages: [pre-commit]
       - id: goimports
       - id: go-fix
+      - id: markdownlint
+        args: [--config, .markdownlint.yaml]
+      - id: actionlint
       - id: go-vet
+      - id: golangci-lint
+      - id: govulncheck
+      - id: gendocs
       - id: go-build
       - id: go-test
-
-  - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.47.0
-    hooks:
-      - id: markdownlint
