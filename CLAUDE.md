@@ -340,9 +340,9 @@ pre-commit install --hook-type commit-msg
 pre-commit run --all-files  # Manual run against all files
 ```
 
-Configured hooks: `no-commit-to-branch`, `branch-name`, `commit-message`
-(commit-msg stage), `goimports`, `go-fix`, `go-vet`, `go-build`, `go-test`,
-`markdownlint`.
+Configured hooks: `branch-name`, `commit-message` (commit-msg stage),
+`goimports`, `go-fix`, `markdownlint`, `actionlint`, `go-vet`,
+`golangci-lint`, `govulncheck`, `gendocs`, `go-build`, `go-test`.
 
 ### Tooling gates
 
